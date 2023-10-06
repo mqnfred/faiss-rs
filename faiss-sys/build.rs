@@ -7,8 +7,15 @@ fn main() {
 
 #[cfg(feature = "static")]
 fn static_link_faiss() {
+    let llvm_path = "/usr/local/opt/llvm/bin"; // Adjust this path if necessary
     let mut cfg = cmake::Config::new("faiss");
     cfg.define("FAISS_ENABLE_C_API", "ON")
+        .define("CMAKE_C_COMPILER", format!("{}/clang", llvm_path))
+        .define("CMAKE_CXX_COMPILER", format!("{}/clang++", llvm_path))
+        .define("OpenMP_C_FLAGS", "-fopenmp")
+        .define("OpenMP_CXX_FLAGS", "-fopenmp")
+        .define("OpenMP_C_LIB_NAMES", "omp")
+        .define("OpenMP_omp_LIBRARY", format!("{}/lib/libomp.dylib", llvm_path))
         .define("BUILD_SHARED_LIBS", "OFF")
         .define("CMAKE_BUILD_TYPE", "Release")
         .define("FAISS_ENABLE_GPU", if cfg!(feature = "gpu") {
@@ -33,7 +40,8 @@ fn static_link_faiss() {
     println!("cargo:rustc-link-lib=static=faiss_c");
     println!("cargo:rustc-link-lib=static=faiss");
     link_cxx();
-    println!("cargo:rustc-link-lib=gomp");
+    println!("cargo:rustc-link-lib=static=omp");
+    println!("cargo:rustc-link-search=native=/usr/local/opt/libomp/lib");
     println!("cargo:rustc-link-lib=blas");
     println!("cargo:rustc-link-lib=lapack");
     if cfg!(feature = "gpu") {
